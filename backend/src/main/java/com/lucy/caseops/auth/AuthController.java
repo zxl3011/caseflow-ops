@@ -1,6 +1,8 @@
 package com.lucy.caseops.auth;
 
+import com.lucy.caseops.security.AuthenticatedUser;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,5 +18,12 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @GetMapping("/me")
+    public CurrentUserResponse currentUser(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return CurrentUserResponse.from(authenticatedUser);
     }
 }
