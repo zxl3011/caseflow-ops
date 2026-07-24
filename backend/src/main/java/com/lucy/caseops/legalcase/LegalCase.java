@@ -1,6 +1,7 @@
 package com.lucy.caseops.legalcase;
 
 import com.lucy.caseops.client.Client;
+import com.lucy.caseops.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -31,7 +32,7 @@ public class LegalCase {
     @Column(nullable = false, length = 30)
     private String status;
 
-    @Column(name = "filing_date", nullable = false)
+    @Column(name = "filing_date")
     private LocalDate filingDate;
 
     @Column(length = 150)
@@ -47,6 +48,10 @@ public class LegalCase {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_user_id")
+    private User createdBy;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -54,6 +59,31 @@ public class LegalCase {
     private LocalDateTime updatedAt;
 
     protected LegalCase() {
+    }
+
+    public static LegalCase createDraft(
+            String caseNumber,
+            String caseType,
+            LocalDate filingDate,
+            String court,
+            LocalDate statuteLimitationDate,
+            Client client,
+            String description,
+            User createdBy
+    ) {
+        LegalCase legalCase = new LegalCase();
+        legalCase.caseNumber = caseNumber;
+        legalCase.caseType = caseType;
+        legalCase.status = "DRAFT";
+        legalCase.filingDate = filingDate;
+        legalCase.court = court;
+        legalCase.statuteLimitationDate = statuteLimitationDate;
+        legalCase.client = client;
+        legalCase.description = description;
+        legalCase.createdBy = createdBy;
+        legalCase.createdAt = LocalDateTime.now();
+        legalCase.updatedAt = legalCase.createdAt;
+        return legalCase;
     }
 
     public Long getId() {
@@ -90,6 +120,10 @@ public class LegalCase {
 
     public String getDescription() {
         return description;
+    }
+
+    public User getCreatedBy() {
+        return createdBy;
     }
 
     public LocalDateTime getCreatedAt() {

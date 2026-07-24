@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,7 +34,10 @@ class LegalCaseAuthorizationIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     private Long caseId;
+    private Long clientId;
+    private Long partnerId;
     private Long assignedLawyerId;
+    private Long unassignedLawyerId;
     private Long unassignedParalegalId;
     private Long owningClientUserId;
     private Long otherClientUserId;
@@ -41,7 +46,13 @@ class LegalCaseAuthorizationIntegrationTest {
     void setUpCaseAccessRelationships() {
         String testId = UUID.randomUUID().toString();
 
+        partnerId = insertUser("Test Partner", "partner-" + testId, Role.PARTNER);
         assignedLawyerId = insertUser("Assigned Lawyer", "lawyer-" + testId, Role.LAWYER);
+        unassignedLawyerId = insertUser(
+                "Unassigned Lawyer",
+                "other-lawyer-" + testId,
+                Role.LAWYER
+        );
         unassignedParalegalId = insertUser(
                 "Unassigned Paralegal",
                 "paralegal-" + testId,
@@ -58,7 +69,7 @@ class LegalCaseAuthorizationIntegrationTest {
                 Role.CLIENT
         );
 
-        Long clientId = jdbcTemplate.queryForObject(
+        clientId = jdbcTemplate.queryForObject(
                 """
                         INSERT INTO clients (name, email, user_id)
                         VALUES (?, ?, ?)
@@ -151,6 +162,131 @@ class LegalCaseAuthorizationIntegrationTest {
                                 Role.CLIENT
                         ))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void lawyerCanCreateDraftCase() throws Exception {
+        mockMvc.perform(post("/api/cases")
+                        .with(authentication(authenticationFor(
+                                assignedLawyerId,
+                                Role.LAWYER
+                        )))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clientId": %d,
+                                  "caseType": "civil",
+                                  "description": "Internal draft notes"
+                                }
+                                """.formatted(clientId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.caseType").value("CIVIL"))
+                .andExpect(jsonPath("$.caseNumber").value(
+                        org.hamcrest.Matchers.matchesPattern(
+                                "CF-\\d{4}-[A-F0-9]{8}"
+                        )
+                ))
+                .andExpect(jsonPath("$.description").doesNotExist());
+    }
+
+    @Test
+    void paralegalCannotCreateCase() throws Exception {
+        mockMvc.perform(post("/api/cases")
+                        .with(authentication(authenticationFor(
+                                unassignedParalegalId,
+                                Role.PARALEGAL
+                        )))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clientId": %d,
+                                  "caseType": "CIVIL"
+                                }
+                                """.formatted(clientId)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void partnerCanAssignLeadLawyer() throws Exception {
+        mockMvc.perform(post("/api/cases/{caseId}/assignments", caseId)
+                        .with(authentication(authenticationFor(partnerId, Role.PARTNER)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "assignmentRole": "LEAD_LAWYER"
+                                }
+                                """.formatted(unassignedLawyerId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId").value(unassignedLawyerId))
+                .andExpect(jsonPath("$.assignmentRole").value("LEAD_LAWYER"));
+    }
+
+    @Test
+    void leadLawyerCanAssignParalegal() throws Exception {
+        mockMvc.perform(post("/api/cases/{caseId}/assignments", caseId)
+                        .with(authentication(authenticationFor(
+                                assignedLawyerId,
+                                Role.LAWYER
+                        )))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "assignmentRole": "PARALEGAL"
+                                }
+                                """.formatted(unassignedParalegalId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.assignmentRole").value("PARALEGAL"));
+    }
+
+    @Test
+    void unassignedLawyerCannotAssignUsers() throws Exception {
+        mockMvc.perform(post("/api/cases/{caseId}/assignments", caseId)
+                        .with(authentication(authenticationFor(
+                                unassignedLawyerId,
+                                Role.LAWYER
+                        )))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "assignmentRole": "PARALEGAL"
+                                }
+                                """.formatted(unassignedParalegalId)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void leadLawyerCannotAssignAnotherLeadLawyer() throws Exception {
+        mockMvc.perform(post("/api/cases/{caseId}/assignments", caseId)
+                        .with(authentication(authenticationFor(
+                                assignedLawyerId,
+                                Role.LAWYER
+                        )))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "assignmentRole": "LEAD_LAWYER"
+                                }
+                                """.formatted(unassignedLawyerId)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void rejectsAssignmentWhenUserRoleDoesNotMatch() throws Exception {
+        mockMvc.perform(post("/api/cases/{caseId}/assignments", caseId)
+                        .with(authentication(authenticationFor(partnerId, Role.PARTNER)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "assignmentRole": "PARALEGAL"
+                                }
+                                """.formatted(unassignedLawyerId)))
+                .andExpect(status().isBadRequest());
     }
 
     private Long insertUser(String fullName, String emailPrefix, Role role) {

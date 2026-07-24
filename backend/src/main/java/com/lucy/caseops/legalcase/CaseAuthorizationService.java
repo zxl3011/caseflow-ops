@@ -33,4 +33,30 @@ public class CaseAuthorizationService {
             case CLIENT -> legalCaseRepository.isOwnedByClientUser(caseId, user.id());
         };
     }
+
+    public boolean canAssign(
+            Long caseId,
+            AssignmentRole assignmentRole,
+            Authentication authentication
+    ) {
+        if (caseId == null
+                || assignmentRole == null
+                || authentication == null
+                || !(authentication.getPrincipal() instanceof AuthenticatedUser user)
+                || user.id() == null) {
+            return false;
+        }
+
+        return switch (user.role()) {
+            case PARTNER -> legalCaseRepository.existsById(caseId);
+            case LAWYER -> assignmentRole != AssignmentRole.LEAD_LAWYER
+                    && caseAssignmentRepository
+                    .existsByLegalCaseIdAndUserIdAndAssignmentRole(
+                            caseId,
+                            user.id(),
+                            AssignmentRole.LEAD_LAWYER
+                    );
+            case PARALEGAL, CLIENT -> false;
+        };
+    }
 }

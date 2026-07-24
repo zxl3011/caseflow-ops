@@ -64,6 +64,56 @@ class CaseAuthorizationServiceTest {
                 .isFalse();
     }
 
+    @Test
+    void allowsPartnerToAssignUsersToExistingCase() {
+        when(legalCaseRepository.existsById(10L)).thenReturn(true);
+
+        assertThat(authorizationService.canAssign(
+                10L,
+                AssignmentRole.LEAD_LAWYER,
+                authenticationFor(Role.PARTNER)
+        )).isTrue();
+    }
+
+    @Test
+    void allowsLeadLawyerToAssignSupportingStaff() {
+        when(caseAssignmentRepository
+                .existsByLegalCaseIdAndUserIdAndAssignmentRole(
+                        10L,
+                        99L,
+                        AssignmentRole.LEAD_LAWYER
+                ))
+                .thenReturn(true);
+
+        assertThat(authorizationService.canAssign(
+                10L,
+                AssignmentRole.PARALEGAL,
+                authenticationFor(Role.LAWYER)
+        )).isTrue();
+    }
+
+    @Test
+    void deniesLeadLawyerFromAssigningAnotherLeadLawyer() {
+        assertThat(authorizationService.canAssign(
+                10L,
+                AssignmentRole.LEAD_LAWYER,
+                authenticationFor(Role.LAWYER)
+        )).isFalse();
+
+        verifyNoInteractions(legalCaseRepository, caseAssignmentRepository);
+    }
+
+    @Test
+    void deniesParalegalFromAssigningUsers() {
+        assertThat(authorizationService.canAssign(
+                10L,
+                AssignmentRole.PARALEGAL,
+                authenticationFor(Role.PARALEGAL)
+        )).isFalse();
+
+        verifyNoInteractions(legalCaseRepository, caseAssignmentRepository);
+    }
+
     private UsernamePasswordAuthenticationToken authenticationFor(Role role) {
         AuthenticatedUser user = new AuthenticatedUser(
                 99L,

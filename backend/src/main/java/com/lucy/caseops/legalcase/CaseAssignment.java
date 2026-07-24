@@ -52,6 +52,21 @@ public class CaseAssignment {
     protected CaseAssignment() {
     }
 
+    public static CaseAssignment assign(
+            LegalCase legalCase,
+            User user,
+            AssignmentRole assignmentRole,
+            User assignedBy
+    ) {
+        CaseAssignment assignment = new CaseAssignment();
+        assignment.legalCase = legalCase;
+        assignment.user = user;
+        assignment.assignmentRole = assignmentRole;
+        assignment.assignedBy = assignedBy;
+        assignment.assignedAt = LocalDateTime.now();
+        return assignment;
+    }
+
     public Long getId() {
         return id;
     }
