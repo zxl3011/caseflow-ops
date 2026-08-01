@@ -1,5 +1,7 @@
 # CaseFlow Ops
 
+[![CI](https://github.com/zxl3011/caseflow-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/zxl3011/caseflow-ops/actions/workflows/ci.yml)
+
 CaseFlow Ops is an in-progress legal matter workflow platform for a small Australian law firm. It is designed to demonstrate secure case access, staff assignment and auditable workflow decisions rather than act as a production legal service.
 
 Only synthetic development data is used.
@@ -16,6 +18,7 @@ Implemented:
 - Lead Lawyer, Assisting Lawyer and Paralegal assignments
 - Flyway-managed PostgreSQL schema evolution
 - unit, web-security and PostgreSQL integration tests
+- GitHub Actions quality gates for backend tests and frontend lint/build
 
 In progress:
 
@@ -55,14 +58,15 @@ The security model combines role-based access control with relationship-based ch
 - JUnit, MockMvc and Spring Security Test
 - React, TypeScript and Vite
 - Docker Compose
+- GitHub Actions continuous integration
 
 ## Run locally
 
 Prerequisites:
 
-- Java 21+
+- Java 21 (Temurin recommended; the repository includes `.java-version`)
 - Docker with Docker Compose
-- Node.js for frontend work
+- Node.js 22 for frontend work
 
 Start PostgreSQL:
 
@@ -94,9 +98,22 @@ Start the frontend scaffold:
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
+
+Before opening a pull request, run the local quality checks:
+
+```bash
+cd backend
+./mvnw test
+
+cd ../frontend
+npm run lint
+npm run build
+```
+
+Database and JWT settings use environment variables in deployed or CI environments while retaining synthetic local-development defaults. See `application.properties` for the supported variable names.
 
 ## Development-only users
 
@@ -118,6 +135,7 @@ These accounts are development fixtures, not production credentials. Moving the 
 - [Architecture](docs/03-architecture.md)
 - [Database design](docs/04-database-design.md)
 - [API design](docs/05-api-design.md)
+- [Development workflow and definition of done](docs/06-development-workflow.md)
 - [Architecture decision records](docs/decisions/README.md)
 
 ## Project boundaries
