@@ -32,6 +32,15 @@ public class DataSeeder {
                 ));
             }
 
+            if (userRepository.findByEmail("lawyer@example.com").isEmpty()) {
+                userRepository.save(new User(
+                        "Demo Lawyer",
+                        "lawyer@example.com",
+                        passwordEncoder.encode("password123"),
+                        Role.LAWYER
+                ));
+            }
+
             if (userRepository.findByEmail("client@example.com").isEmpty()) {
                 userRepository.save(new User(
                         "Demo Client",

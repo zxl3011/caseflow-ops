@@ -1,6 +1,5 @@
 package com.lucy.caseops.security;
 
-import com.lucy.caseops.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -26,15 +25,14 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(User user) {
+    public String generateToken(AuthenticatedUser user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-                .subject(user.getEmail())
-                .claim("userId", user.getId())
-                .claim("fullName", user.getFullName())
-                .claim("role", user.getRole().name())
+                .subject(user.email())
+                .claim("userId", user.id())
+                .claim("role", user.role().name())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
