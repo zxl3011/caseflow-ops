@@ -19,6 +19,7 @@ Authorization: Bearer <token>
 | `GET` | `/api/health` | Public | None |
 | `POST` | `/api/auth/login` | Public | Valid credentials |
 | `GET` | `/api/auth/me` | Required | Any authenticated user |
+| `POST` | `/api/clients` | Required | Partner or Lawyer |
 | `GET` | `/api/cases/{caseId}` | Required | Partner, assigned staff or owning Client |
 | `POST` | `/api/cases` | Required | Partner or Lawyer |
 | `POST` | `/api/cases/{caseId}/assignments` | Required | Partner or Lead Lawyer within assignment limits |
@@ -65,6 +66,28 @@ Authorization: Bearer <token>
 ```
 
 The response includes `userId`, `fullName`, `email` and `role`.
+
+## Clients
+
+### Create a client
+
+```http
+POST /api/clients
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Example Client",
+  "email": "client@example.com",
+  "phone": "0400 000 000"
+}
+```
+
+Partners and Lawyers receive `201 Created` with a `Location` header and a client-safe response. Text fields are trimmed, email is stored in lowercase, and blank phone input becomes `null`. Paralegals and Clients receive `403 Forbidden`.
+
+Duplicate email is checked case-insensitively. The service performs an early check for a useful response, while a PostgreSQL unique index remains the final concurrency guard. A duplicate returns `409 Conflict`.
 
 ## Cases
 
@@ -151,14 +174,14 @@ Valid assignment roles:
 | `401` | Missing, invalid or expired authentication |
 | `403` | Authenticated but not authorised |
 | `404` | Referenced client, user or case not found |
-| `409` | User already assigned to the case |
+| `409` | Duplicate client email or user already assigned to the case |
 
 Security failures use a small JSON structure containing `status`, `error` and `message`. Validation and domain errors currently use Spring Boot's standard error handling; a unified error contract remains planned.
 
 ## Planned API improvements
 
 - OpenAPI generation
-- client management endpoints
+- client portal linking, listing and update endpoints
 - case listing with pagination and role-aware filtering
 - controlled case-status transitions
 - consistent Problem Details responses

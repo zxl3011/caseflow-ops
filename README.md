@@ -16,13 +16,14 @@ Implemented:
 - client ownership checks
 - Draft case creation by Partners and Lawyers
 - Lead Lawyer, Assisting Lawyer and Paralegal assignments
+- Partner/Lawyer client creation with case-insensitive duplicate protection
 - Flyway-managed PostgreSQL schema evolution
 - unit, web-security and PostgreSQL integration tests
 - GitHub Actions quality gates for backend tests and frontend lint/build
 
 In progress:
 
-- client management
+- client portal linking, listing and updates
 - case status transitions
 - React authentication and protected routes
 

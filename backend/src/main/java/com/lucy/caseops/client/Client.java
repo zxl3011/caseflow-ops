@@ -40,6 +40,15 @@ public class Client {
     protected Client() {
     }
 
+    public static Client create(String name, String email, String phone) {
+        Client client = new Client();
+        client.name = name;
+        client.email = email;
+        client.phone = phone;
+        client.createdAt = LocalDateTime.now();
+        return client;
+    }
+
     public Long getId() {
         return id;
     }

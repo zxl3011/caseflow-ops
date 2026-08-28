@@ -18,6 +18,15 @@
 - A Client can view a case only when the case belongs to their linked client record.
 - A shared client-safe response must not expose the internal case description.
 
+### Client creation
+
+- A Partner or Lawyer can create a client record.
+- Paralegals and Clients cannot create client records.
+- Client names, emails and phone numbers are normalised before persistence.
+- Client email uniqueness is case-insensitive.
+- Duplicate client emails return `409 Conflict`.
+- Client creation does not create or link a portal account.
+
 ### Case creation
 
 - A Partner or Lawyer can create a case in `DRAFT` status.
@@ -45,6 +54,7 @@
 | View any case | Yes | No | No | No |
 | View assigned case | Yes | Yes | Yes | No |
 | View own client case | Not applicable | Not applicable | Not applicable | Yes |
+| Create client | Yes | Yes | No | No |
 | Create Draft case | Yes | Yes | No | No |
 | Assign Lead Lawyer | Yes | No | No | No |
 | Assign supporting staff | Yes | Lead Lawyer only | No | No |
@@ -65,7 +75,7 @@
 
 - Partners can open an approved Draft case.
 - Lead Lawyers can update assigned case details.
-- Clients can be created and linked to portal accounts.
+- Clients can be linked to portal accounts.
 - Documents have internal and client-visible classifications.
 - Deadline and hearing changes produce audit events.
 - The frontend provides role-aware navigation and protected routes.
