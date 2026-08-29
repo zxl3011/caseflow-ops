@@ -60,7 +60,7 @@ erDiagram
 ## Core invariants
 
 - user email is unique
-- client email is unique
+- client email is unique case-insensitively
 - a portal user can link to at most one client record
 - case number is unique
 - every case belongs to one client
@@ -100,9 +100,15 @@ This change supports multiple lawyers and paralegals on one case.
 - recorded the user who created a case
 - backfilled creation ownership from existing Lead Lawyer assignments where available
 
+### V4 — case-insensitive client email
+
+- normalised existing client emails to lowercase
+- added a unique functional index on `LOWER(email)`
+- retained the database as the final duplicate-email guard during concurrent requests
+
 ## Migration policy
 
-An applied migration is immutable. Schema corrections are made in a new migration rather than editing V1, V2 or V3. This preserves checksums and makes every environment reproducible.
+An applied migration is immutable. Schema corrections are made in a new migration rather than editing V1, V2, V3 or V4. This preserves checksums and makes every environment reproducible.
 
 ## Planned database work
 
