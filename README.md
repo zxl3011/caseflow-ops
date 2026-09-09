@@ -50,6 +50,20 @@ flowchart LR
 
 The security model combines role-based access control with relationship-based checks. For example, having the `LAWYER` role is not sufficient to view every case; the lawyer must also be assigned to that case.
 
+## Design decisions
+
+| Decision | Rationale | Trade-off |
+|---|---|---|
+| [Reload the current user after JWT validation](docs/decisions/0001-reload-users-during-jwt-authentication.md) | A valid token should not preserve access after an account is deleted or a role changes. The token identifies the user, while PostgreSQL remains the source of truth for current authorities. | Each authenticated request performs a database lookup. A higher-scale version could use short-lived caching or token-version checks. |
+| [Combine roles with case relationships](docs/decisions/0002-combine-roles-with-case-relationships.md) | Roles define broad capabilities, but lawyers and paralegals receive case access only through assignments and clients only through ownership. This avoids granting every user with the same role access to every matter. | Authorisation requires relationship queries, and a future multi-tenant version must add an explicit firm boundary. |
+| [Enforce authorisation at the service boundary](docs/decisions/0004-enforce-authorisation-at-service-boundary.md) | Protecting application use cases rather than only HTTP routes keeps the rules effective when a service is reused by another controller, job or delivery mechanism. | Method-security tests must call Spring-managed service proxies, and policy checks may add database work. |
+| [Return explicit response models](docs/decisions/0005-use-client-safe-response-models.md) | DTOs prevent JPA relationships and internal legal notes from being exposed accidentally, while allowing the persistence model and API contract to evolve independently. | Mapping code is required, and different audiences may eventually need separate response models. |
+| Enforce important invariants in both the application and PostgreSQL | An early application check produces a useful `409 Conflict`, while database constraints remain the final safeguard against concurrent duplicate requests. `saveAndFlush()` evaluates the constraint inside the service transaction so it can be translated consistently. | Some validation is intentionally duplicated, but the database remains authoritative when concurrent requests race. |
+| Keep multi-write workflows transactional | Draft case creation and automatic Lead Lawyer assignment succeed or roll back together, preventing partially created workflows. | Transaction boundaries must stay in the service layer and should not include slow external operations. |
+| [Keep applied Flyway migrations immutable](docs/decisions/0003-keep-flyway-migrations-immutable.md) | Append-only migrations preserve checksums and make schema history reproducible across local, CI and future deployed environments. | Even small schema corrections require a new numbered migration. |
+
+The detailed context and consequences for significant choices are maintained in the [architecture decision records](docs/decisions/README.md).
+
 ## Technology
 
 - Java 21 and Spring Boot
