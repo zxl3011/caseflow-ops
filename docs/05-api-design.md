@@ -20,6 +20,7 @@ Authorization: Bearer <token>
 | `POST` | `/api/auth/login` | Public | Valid credentials |
 | `GET` | `/api/auth/me` | Required | Any authenticated user |
 | `POST` | `/api/clients` | Required | Partner or Lawyer |
+| `GET` | `/api/clients` | Required | Partner or Lawyer |
 | `GET` | `/api/cases/{caseId}` | Required | Partner, assigned staff or owning Client |
 | `POST` | `/api/cases` | Required | Partner or Lawyer |
 | `POST` | `/api/cases/{caseId}/assignments` | Required | Partner or Lead Lawyer within assignment limits |
@@ -88,6 +89,44 @@ Content-Type: application/json
 Partners and Lawyers receive `201 Created` with a `Location` header and a client-safe response. Text fields are trimmed, email is stored in lowercase, and blank phone input becomes `null`. Paralegals and Clients receive `403 Forbidden`.
 
 Duplicate email is checked case-insensitively. The service performs an early check for a useful response, while a PostgreSQL unique index remains the final concurrency guard. A duplicate returns `409 Conflict`.
+
+### List clients
+
+```http
+GET /api/clients?page=0&size=20
+Authorization: Bearer <token>
+```
+
+Partners and Lawyers receive `200 OK` with a paginated, client-safe directory. Paralegals and Clients receive `403 Forbidden`.
+
+| Parameter | Default | Valid range |
+|---|---|---|
+| `page` | `0` | `0` or greater |
+| `size` | `20` | `1`–`100` |
+
+A negative `page`, or a `size` outside `1`–`100`, returns `400 Bad Request`. Results are ordered by client name ascending, then client id ascending, so pagination stays stable across requests.
+
+Response:
+
+```json
+{
+  "items": [
+    {
+      "id": 10,
+      "name": "Example Client",
+      "email": "client@example.com",
+      "phone": "0400 000 000",
+      "createdAt": "2026-09-11T10:30:00"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+An empty directory, or a page beyond the last page, returns `200 OK` with an empty `items` array. Listing does not grant access to a client's cases, documents or internal notes.
 
 ## Cases
 
@@ -181,7 +220,7 @@ Security failures use a small JSON structure containing `status`, `error` and `m
 ## Planned API improvements
 
 - OpenAPI generation
-- client portal linking, listing and update endpoints
+- client portal linking and update endpoints
 - case listing with pagination and role-aware filtering
 - controlled case-status transitions
 - consistent Problem Details responses

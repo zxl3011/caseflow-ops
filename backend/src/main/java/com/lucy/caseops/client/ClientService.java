@@ -1,6 +1,10 @@
 package com.lucy.caseops.client;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -40,6 +44,25 @@ public class ClientService {
                     exception
             );
         }
+    }
+
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('PARTNER', 'LAWYER')")
+    public ClientPageResponse list(int page, int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "page must be zero or greater and size must be between 1 and 100"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("name").ascending().and(Sort.by("id").ascending())
+        );
+        Page<Client> clientPage = clientRepository.findAll(pageable);
+        return ClientPageResponse.from(clientPage);
     }
 
     private ResponseStatusException duplicateEmail() {

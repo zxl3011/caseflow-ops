@@ -17,13 +17,14 @@ Implemented:
 - Draft case creation by Partners and Lawyers
 - Lead Lawyer, Assisting Lawyer and Paralegal assignments
 - Partner/Lawyer client creation with case-insensitive duplicate protection
+- Partner/Lawyer paginated client directory listing (`GET /api/clients`), with stable name/id ordering and role-based access control
 - Flyway-managed PostgreSQL schema evolution
 - unit, web-security and PostgreSQL integration tests
 - GitHub Actions quality gates for backend tests and frontend lint/build
 
 In progress:
 
-- client portal linking, listing and updates
+- client portal linking and updates
 - case status transitions
 - React authentication and protected routes
 
