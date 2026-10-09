@@ -27,6 +27,17 @@
 - Duplicate client emails return `409 Conflict`.
 - Client creation does not create or link a portal account.
 
+### Client listing
+
+- A Partner or Lawyer can list the client directory with pagination.
+- Paralegals and Clients cannot list clients.
+- Results are ordered by name ascending, then id ascending, for stable pagination.
+- The page defaults to `0` and the size defaults to `20`; size must be between `1` and `100`.
+- A negative page or an out-of-range size returns `400 Bad Request`.
+- An empty directory or a page beyond the last page returns `200 OK` with an empty list.
+- Listing returns explicit response models and never exposes linked user, case or document data.
+- Listing clients does not grant access to their cases.
+
 ### Case creation
 
 - A Partner or Lawyer can create a case in `DRAFT` status.
@@ -55,6 +66,7 @@
 | View assigned case | Yes | Yes | Yes | No |
 | View own client case | Not applicable | Not applicable | Not applicable | Yes |
 | Create client | Yes | Yes | No | No |
+| List clients | Yes | Yes | No | No |
 | Create Draft case | Yes | Yes | No | No |
 | Assign Lead Lawyer | Yes | No | No | No |
 | Assign supporting staff | Yes | Lead Lawyer only | No | No |
